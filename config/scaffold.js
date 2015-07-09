@@ -116,17 +116,5 @@ module.exports = {
                 release: '/$&'
             }]
         }
-    },
-    'node-runtime': {
-        'info': 'create a nodejs online runtime',
-        'config': {
-            'type': 'gitlab',
-            'repos': 'fex/node-runtime',
-            'prompt': [],
-            'roadmap': [{
-                reg: '**',
-                release: '/$&'
-            }]
-        }
     }
 };
