@@ -143,19 +143,32 @@ function getGameChoice(conf,templateName){
 	    		if(snailGames[gamename].gameId !== ''){
 	    			gameChoices.push(gamename);
 	    		}
-	    		
 	    	}
 
-	    	inquirer.prompt([{
+	    	var questions = [];
+
+	    	var gameNameQ = {
 	    		type:   'list',              
 				name:   'gameName',             
 				message:'选择游戏名称', 
 				default:'九阴真经',
 				choices:gameChoices,
-	    	}], function( answers ) {
+	    	};
+
+	    	questions.push(gameNameQ);
+	    	questions = questions.concat(conf.config.prompt);
+
+	    	// console.log(conf.config.prompt);
+	    	// console.log(JSON.stringify(questions));
+
+	    	// console.log(questions);
+
+	    	inquirer.prompt(questions, function( answers ) {
 	    		console.log(answers);
 
-	return false;
+
+
+				return false;
     			var repos = conf.config.repos;
 				var respo_url = getGit_url(repos);
 
