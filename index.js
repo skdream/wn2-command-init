@@ -19,6 +19,7 @@ var path = require('path');
 var inquirer = require("inquirer");
 var Download = require('download');
 var downloadStatus = require('download-status');
+var util = require('./lib/util.js');
 
 exports.register = function(commander){
 
@@ -47,16 +48,6 @@ exports.register = function(commander){
 			.description('create a ' + key)
 	})
 
-/*
-	commander
-	  .command('*')
-	  .action(function(env){
-	    console.log('deploying "%s"', env);
-	  });
-
-	commander.parse(process.argv);
-
-*/
 
     commander.action(function () {
         var args = Array.prototype.slice.call(arguments);
@@ -68,27 +59,6 @@ exports.register = function(commander){
             fis.log.throw = true;
         }
 
-/*
-        if (!template) {
-            commander.outputHelp();
-            return;
-        }
-
-     	if (!options.name) {
-            fis.log.error('should specify a name with --name.'); 
-            console.log(options.name);       
-        }
-
-        template = template.split('@');
-        var version = template.length ===2 ? template[1] : 'master';
-
-        var name = template[0];
-
-        var conf = templates[name];
-        if(!conf){
-        	fis.log.error('invalid init command, see -h');
-        }
-*/
 		var version='';
 		var templateName = '';
 		var conf ='';
@@ -106,7 +76,7 @@ exports.register = function(commander){
 			var questions = [{
 				type:   'list',               // input, confirm, list, rawlist, password
 				name:   'template',               // (String) The name to use when storing the answer in the anwers hash
-				message:'选择您要创建的项目类型',               // The question to print
+				message:'项目类型:',               // The question to print
 				default:'site',               // Default value(s) to use if nothing is entered
 				choices:templateLists,               // Choices array or a function returning a choices array
 				// validate:function(input){ //Receive the user input and should return true if the value is valid, and an error message (String) otherwise. If false is returned, a default error message is provided.
@@ -126,88 +96,176 @@ exports.register = function(commander){
 
 function getGameChoice(conf,templateName){
     //var dir = process.cwd();
-	//check_dir('src'); // 检测当前目录是否存在src
-
+	check_dir('src'); // 检测当前目录是否存在src
  	var snailGames;
 	var download = new Download({ extract: true, strip: 1 ,mode: '755'})
-	    .get(fis.config.get('snailGameList')||'https://raw.githubusercontent.com/snail-team/wn-data/master/snailGames.json')
-	    .dest('./')
-	    .use(/*downloadStatus()*/)
-	    .run(function(err, files){
+    .get(fis.get('snailGameList')||'https://raw.githubusercontent.com/snail-team/wn-data/master/snailGames.json')
+    .dest('./')
+    .use(/*downloadStatus()*/)
+    .run(function(err, files){
 
-	    	snailGames=fse.readJsonSync('./snailGames.json');
-	    	fse.removeSync('./snailGames.json');
+    	snailGames=fse.readJsonSync('./snailGames.json');
+    	fse.removeSync('./snailGames.json');
 
-	    	var gameChoices = [];
-	    	for(var gamename in snailGames){
-	    		if(snailGames[gamename].gameId !== ''){
-	    			gameChoices.push(gamename);
-	    		}
-	    	}
+		
+    	var gameChoices = [];
+    	for(var gamename in snailGames){
+    		if(snailGames[gamename].gameId !== ''){
+    			gameChoices.push(gamename);
+    		}
+    	}
+    	var gameNameQ = {
+    		type:   'list',              
+			name:   'gameName',             
+			message:'游戏名称：', 
+			default:'九阴真经',
+			choices:gameChoices
+    	};
+    
+    	inquirer.prompt(gameNameQ, function( answers ) {
 
-	    	var questions = [];
+			var domains = [];
+			var domainRootMap = {};
+			var gameName = answers.gameName;
+    		var server = snailGames[gameName].server;
+    		var len = server.length;
+    		var gameInfo = snailGames[gameName];
+    		var questions = [];
 
-	    	var gameNameQ = {
-	    		type:   'list',              
-				name:   'gameName',             
-				message:'选择游戏名称', 
-				default:'九阴真经',
-				choices:gameChoices,
-	    	};
+    		while(len--){
+    			domains.push(server[len].domain);
+    			domainRootMap[server[len].domain] = server[len].root;
+    		}
 
-	    	questions.push(gameNameQ);
+    		if(domains.length){
+				var gameDomainQ = {
+					type:   'list',              
+					name:   'domain',             
+					message:'网站域名：', 
+					// default:'www.woniu.com',
+					choices:domains
+				}
+				questions.push(gameDomainQ);
+    		}
 	    	questions = questions.concat(conf.config.prompt);
 
-	    	// console.log(conf.config.prompt);
-	    	// console.log(JSON.stringify(questions));
-
-	    	// console.log(questions);
-
-	    	inquirer.prompt(questions, function( answers ) {
-	    		console.log(answers);
-
-
-
-				return false;
-    			var repos = conf.config.repos;
+    		inquirer.prompt(questions, function( answers ) {
+				var root = domainRootMap[answers.domain] ||'';
+				answers['domain'] = answers.domain || 'http://www.woniu.com/';
+				var htmlData = fis.util.merge(gameInfo,{root:root});
+				htmlData = fis.util.merge(htmlData,{gameName:gameName});
+				htmlData = fis.util.merge(htmlData,answers);
+				htmlData = fis.util.merge(htmlData, {template:templateName});
+				//console.log(htmlData);
+				var repos = conf.config.repos;
 				var respo_url = getGit_url(repos);
-
-				// inquirer.prompt(questions, function( answers ) {
-				// 	name = answers.template;
-				// 	conf = templates[name];			
-				// 	downLoadTemplate(conf);
-				// });
-
-			 	fis.log.notice('准备下载...');
+				//	var source_path = conf.config.path || 'src';
+				fis.log.notice('准备下载...');
 				var download = new Download({ extract: true, strip: 1 ,mode: '755'})
-				    .get(respo_url)
-				    .dest('src')
-				    .use(downloadStatus())
-				    .run(function(err, files){
-				    	
-				    });				
-			});			
-	    });
+				.get(respo_url)
+				.dest('./')
+				.use(downloadStatus())
+				.run(function(err, files){
+					deploy(htmlData,conf)
+				});
+    		});
+		});
+    });
+}
+
+
+
+function deploy(htmlData,conf){
+
+	// 删除文件
+	fs.exists('./README.md', function(exists){
+		if(exists){
+			fs.unlinkSync('./README.md');
+		}
+	});
+
+	var curDirName = path.basename(process.cwd());
+	var date = new Date();
+	var yy = date.getFullYear();
+	var mm = date.getMonth() + 1;
+		mm = mm>9 ?mm: '0'+mm;
+	var siteRoot = "/opt/htdocs/cmsv3/cmsroot/sites/";
+	var deployPath = {
+		"site"      : "static/web" + yy +mm,
+		"m-site"    : "static/web" + yy +mm,
+		"special"   : "static/act/" + yy +mm + '/'+curDirName,
+		"m-special" : "static/act/" + yy +mm + '/'+ curDirName,
+		"page"      : "/"
 	}
 
-function downLoadTemplate(){
+	if(htmlData.root===''){
+		console.log('此站点未配置发布目录，请手动修改fis-config.js配置文件');
+		htmlData.root="[站点目录]";
+	}
+	htmlData['root'] = siteRoot + htmlData.root + '/'+deployPath[htmlData['template']];
 
+	if(htmlData.domain){
+		var dmArr = htmlData.domain.split('.'),
+			dmPrefixName = '';
+		dmPrefixName = (dmArr[0]=== 'm')? dmArr[1]: dmArr[0];
+		htmlData['domain'] = 'http://' + htmlData['domain'];
+	}
+
+	htmlData['pageName'] = htmlData.domain + '@' + curDirName;
+	htmlData['dmPrefixName'] = dmPrefixName;
+	htmlData['date'] = (new Date()).toDateString()
+
+
+
+	var files = util.find('./','',new RegExp('(\\.md)$','g'));
+	fis.util.map(htmlData,function(k,v){
+		fis.util.map(files,function(index,filepath){
+			var keyword_reg = conf.config.keyword_reg || /\<\%\=([\s\S]*?)\%\>/ig;
+			//var fileIgnore=new RegExp('(\\.git)|(fis-conf\\.js)$|(\\.jpg)$|(\\.png)$|(\\.gif)$','g');
+
+			if(fs.lstatSync(filepath).isSymbolicLink() === false && fis.util.isTextFile(filepath)){
+
+				var content = fs.readFileSync(filepath, 'utf8');
+				if(typeof content == 'object'){
+					content=JSON.stringify(content);
+				}
+				content = content.replace(keyword_reg,function(m, $1){
+					if($1 ===k){
+						m = v;
+					}
+					return m;
+				});
+				fis.util.fs.writeFileSync(filepath, content, 'utf8');
+			}
+		})
+	});
 }
 
-function deploy(){
-
-}
-
+// 检查当前目录是否已有文件
 function check_dir(dir){
 	var dir = path.resolve(dir);
 	 if (fis.util.fs.existsSync(dir) && process.cwd() != dir) {
         fis.log.error('the directory has already exist, the process will stop.');
     }
 }
-
+/**
+ * @param id
+ * @param type
+ * return url
+ */
 function getGit_url(id){
-	var repos = 'https://codeload.github.com/';
-	var postfix = '/tar.gz/';
+
+	var repos = '',
+		postfix = '';
+
+	if(id.indexOf('snail-team')>-1){
+	    repos = 'https://codeload.github.com/';
+	    postfix = '/tar.gz/';
+	}else{
+		repos = 'http://git.woniu.com:3600/';
+		postfix = '/repository/archive.tar.gz?ref=';
+	}
+
 	if(!id){
 		new Error('must given a component ID')
 	}
