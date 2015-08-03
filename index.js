@@ -173,8 +173,6 @@ function getGameChoice(conf,templateName){
 		});
     });
 }
-
-
 function removeFile(filedir){
 	// 删除文件
 	fs.exists(filedir, function(exists){
@@ -184,7 +182,6 @@ function removeFile(filedir){
 	});
 }
 
-
 function deploy(htmlData,conf){
 
 	var forDelFiles = ['./src/README.md','./src/css/readme.txt','./src/images/readme.txt','./src/js/lib/readme.txt'];
@@ -192,7 +189,6 @@ function deploy(htmlData,conf){
 	forDelFiles.forEach(function(dir){
 		removeFile(dir);
 	});
-
 
 	var curDirName = path.basename(process.cwd());
 	var date = new Date();
@@ -212,20 +208,21 @@ function deploy(htmlData,conf){
 		console.log('此站点未配置发布目录，请手动修改fis-config.js配置文件');
 		htmlData.root="[站点目录]";
 	}
-	htmlData['root'] = siteRoot + htmlData.root + '/'+deployPath[htmlData['template']];
+	var deployPathRoot = deployPath[htmlData['template']];
+	htmlData['root'] = siteRoot + htmlData.root + '/' + deployPathRoot;
+
 
 	if(htmlData.domain){
 		var dmArr = htmlData.domain.split('.'),
 			dmPrefixName = '';
 		dmPrefixName = (dmArr[0]=== 'm')? dmArr[1]: dmArr[0];
 		htmlData['domain'] = 'http://' + htmlData['domain'];
+		htmlData['absRoot'] = htmlData['domain'] + '/'+ deployPathRoot;
 	}
 
 	htmlData['pageName'] = htmlData.domain + '@' + curDirName;
 	htmlData['dmPrefixName'] = dmPrefixName;
 	htmlData['date'] = (new Date()).toDateString()
-
-
 
 	var files = util.find('./','',new RegExp('(\\.md)$','g'));
 	fis.util.map(htmlData,function(k,v){
@@ -275,7 +272,6 @@ function getGit_url(id){
 		repos = 'http://git.woniu.com:3600/';
 		postfix = '/repository/archive.tar.gz?ref=';
 	}
-
 	if(!id){
 		new Error('must given a component ID')
 	}
