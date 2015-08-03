@@ -190,24 +190,9 @@ function deploy(htmlData,conf){
 	var forDelFiles = ['./src/README.md','./src/css/readme.txt','./src/images/readme.txt','./src/js/lib/readme.txt'];
 
 	forDelFiles.forEach(function(dir){
-
-		function removeFile(filedir){
-			// 删除文件
-			fs.exists(filedir, function(exists){
-				console.log(exists);
-				if(exists){
-					fs.unlinkSync(filedir);
-				}
-			});
-		}
+		removeFile(dir);
 	});
 
-	// 删除文件
-	fs.exists('./README.md', function(exists){
-		if(exists){
-			fs.unlinkSync('./README.md');
-		}
-	});
 
 	var curDirName = path.basename(process.cwd());
 	var date = new Date();
