@@ -43,9 +43,9 @@ exports.register = function(commander){
 
 		templateLists.push(key);
 		//console.log(JSON.stringify(key) + ':' + JSON.stringify(info));
-		commander
-			.command(key)
-			.description('create a ' + key)
+		// commander
+		// 	.command(key)
+		// 	.description('create a ' + key)
 	})
 
 
@@ -76,7 +76,7 @@ exports.register = function(commander){
 			var questions = [{
 				type:   'list',               // input, confirm, list, rawlist, password
 				name:   'template',               // (String) The name to use when storing the answer in the anwers hash
-				message:'项目类型:',               // The question to print
+				message:'choose a project:',               // The question to print
 				default:'site',               // Default value(s) to use if nothing is entered
 				choices:templateLists,               // Choices array or a function returning a choices array
 				// validate:function(input){ //Receive the user input and should return true if the value is valid, and an error message (String) otherwise. If false is returned, a default error message is provided.
@@ -106,6 +106,7 @@ function getGameChoice(conf,templateName){
 
     	snailGames=fse.readJsonSync('./snailGames.json');
     	fse.removeSync('./snailGames.json');
+    	fse.removeSync('./images/readme.text');
 
 		
     	var gameChoices = [];
@@ -174,8 +175,32 @@ function getGameChoice(conf,templateName){
 }
 
 
+function removeFile(filedir){
+	// 删除文件
+	fs.exists(filedir, function(exists){
+		if(exists){
+			fs.unlinkSync(filedir);
+		}
+	});
+}
+
 
 function deploy(htmlData,conf){
+
+	var forDelFiles = ['./src/README.md','./src/css/readme.txt','./src/images/readme.txt','./src/js/lib/readme.txt'];
+
+	forDelFiles.forEach(function(dir){
+
+		function removeFile(filedir){
+			// 删除文件
+			fs.exists(filedir, function(exists){
+				console.log(exists);
+				if(exists){
+					fs.unlinkSync(filedir);
+				}
+			});
+		}
+	});
 
 	// 删除文件
 	fs.exists('./README.md', function(exists){

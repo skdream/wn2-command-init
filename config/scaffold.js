@@ -2,8 +2,8 @@ module.exports = {
     'site': {
         'info': 'create a home site',
         'config': {
-            'type': 'github',
-            'repos': 'snail-team/wn-site-template',
+            'type': 'gitlab',
+            'repos': 'template/site-template',
             'prompt': [{
                 type:   'input',               // input, confirm, list, rawlist, password
                 name:   'frontEnd',               // (String) The name to use when storing the answer in the anwers hash
@@ -26,8 +26,8 @@ module.exports = {
     'm-site': {
         'info': 'create a mobile home site',
         'config': {
-            'type': 'github',
-            'repos': 'snail-team/m-site-template',
+            'type': 'gitlab',
+            'repos': 'template/m-site',
             'prompt': [{
                 type:   'input', 
                 name:   'frontEnd',
@@ -50,7 +50,7 @@ module.exports = {
     'special': {
         'info': 'create a new sepcial',
         'config': {
-            'type': 'github',
+            'type': 'gitlab',
             'repos': 'template/special',
             'prompt': [{
                 type:   'input',
@@ -70,8 +70,8 @@ module.exports = {
     'm-special': {
         'info': 'create a new special',
         'config': {
-            'type': 'github',
-            'repos': 'snail-team/m-special',
+            'type': 'gitlab',
+            'repos': 'template/m-special',
             'prompt': [{
                 type:   'input',
                 name:   'frontEnd',
@@ -90,7 +90,7 @@ module.exports = {
     'page': {
         'info': 'create a new page',
         'config': {
-            'type': 'github',
+            'type': 'gitlab',
             'repos': 'template/page',
             'path': '/page',
             'prompt': [{
