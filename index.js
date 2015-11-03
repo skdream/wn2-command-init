@@ -106,8 +106,6 @@ function createSnailSite(){
 	var mm = date.getMonth() + 1;
 		mm = mm>9 ?mm: '0'+mm;
 
-	var dateDir = yy + '/' + mm;
-
 	var htmlData = {};
 
 	inquirer.prompt(questions, function( answer ) {
@@ -117,7 +115,7 @@ function createSnailSite(){
 		var root = siteRootMap[answer.template];
 
 		htmlData['domain'] =  'http://mobile.woniu.com/';
-		htmlData['root'] =  path.join( root, dateDir,path.basename(process.cwd()) );;
+		htmlData['root'] =   root + '/' + yy + mm + '/'+ path.basename(process.cwd()) ;
 		htmlData = fis.util.merge(htmlData,answer);
 
 		htmlData['date'] = (new Date()).toDateString();

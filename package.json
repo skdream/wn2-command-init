@@ -1,6 +1,6 @@
 {
   "name": "wn2-command-init",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "wn2 init command",
   "main": "index.js",
   "scripts": {
