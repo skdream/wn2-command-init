@@ -12,7 +12,9 @@ exports.name = 'init';
 exports.usage = '<command> [options]';
 exports.desc = 'A awesome scaffold of fis';
 
-var templates = require('./config/scaffold.js');
+var scaffold = require('./config/scaffold.js');
+var templates = scaffold.woniu;
+var snailConfig = scaffold.snail;
 var fs = require('fs');
 var fse = require("fs-extra");
 var path = require('path');
@@ -20,6 +22,8 @@ var inquirer = require("inquirer");
 var Download = require('download');
 var downloadStatus = require('download-status');
 var util = require('./lib/util.js');
+
+var templateLists = [];
 
 exports.register = function(commander){
 
@@ -38,7 +42,7 @@ exports.register = function(commander){
 	  console.log('');
 	});
 
-	var templateLists = [];
+
 	fis.util.map(templates,function(key, info) {
 
 		templateLists.push(key);
@@ -58,6 +62,88 @@ exports.register = function(commander){
             fis.log.level = fis.log.L_ALL;
             fis.log.throw = true;
         }
+
+       
+
+        inquirer.prompt({
+        	type:'list',
+        	name:'domain',
+        	message:'choose a domain:',
+        	default:'woniu.com',
+        	choices:['woniu.com','snail.com']
+        },function(answer){
+        	if(answer.domain === 'woniu.com'){
+        		createWoniuSite(template);
+        	}else{
+        		createSnailSite(); // 商城处理逻辑
+        	}
+
+        })
+    });
+}
+
+
+
+function createSnailSite(){
+
+	var questions=[{
+		type:   'list',              
+		name:   'template',             
+		message:'choose a template type:',      
+		default:'mobile',               
+		choices:['m-mobile','mobile']
+	}];
+
+	questions = questions.concat(snailConfig.prompt);
+
+	var siteRootMap={
+		"mobile":"/opt/htdocs/cmsv3/cmsroot/sites/mobile.snail.com/act",
+		"m-mobile":"/opt/htdocs/cmsv3/cmsroot/sites/mobile.snail.com/m/act"
+	}
+
+	var date = new Date();
+	var yy = date.getFullYear();
+	var mm = date.getMonth() + 1;
+		mm = mm>9 ?mm: '0'+mm;
+
+	var dateDir = yy + '/' + mm;
+
+	var htmlData = {};
+
+	inquirer.prompt(questions, function( answer ) {
+
+		
+		var conf = snailConfig[answer.template];
+		var root = siteRootMap[answer.template];
+
+		htmlData['domain'] =  'http://mobile.woniu.com/';
+		htmlData['root'] =  path.join( root, dateDir,path.basename(process.cwd()) );;
+		htmlData = fis.util.merge(htmlData,answer);
+
+		htmlData['date'] = (new Date()).toDateString();
+
+		//console.log(htmlData);
+		var repos = conf.config.repos;
+		var respo_url = getGit_url(repos);
+		//	var source_path = conf.config.path || 'src';
+		fis.log.notice('准备下载...');
+		var download = new Download({ extract: true, strip: 1 ,mode: '755'})
+		.get(respo_url)
+		.dest('./')
+		.use(downloadStatus())
+		.run(function(err, files){
+
+
+			
+			// 替换模板默认字段
+			initSiteContent(htmlData, conf);
+
+		});
+	});
+}
+
+// woniu网处理逻辑
+function createWoniuSite(template){
 
 		var version='';
 		var templateName = '';
@@ -90,7 +176,6 @@ exports.register = function(commander){
 				getGameChoice(conf,templateName);
 			});
 		}
-    });
 }
 
 
@@ -157,6 +242,11 @@ function getGameChoice(conf,templateName){
 				htmlData = fis.util.merge(htmlData,{gameName:gameName});
 				htmlData = fis.util.merge(htmlData,answers);
 				htmlData = fis.util.merge(htmlData, {template:templateName});
+
+
+
+
+
 				//console.log(htmlData);
 				var repos = conf.config.repos;
 				var respo_url = getGit_url(repos);
@@ -186,16 +276,20 @@ function deploy(htmlData,conf){
 
 	var forDelFiles = ['./src/README.md','./src/css/readme.txt','./src/images/readme.txt','./src/js/lib/readme.txt'];
 
+	var siteRoot = "/opt/htdocs/cmsv3/cmsroot/sites/";
+
+
 	forDelFiles.forEach(function(dir){
 		removeFile(dir);
 	});
+
 
 	var curDirName = path.basename(process.cwd());
 	var date = new Date();
 	var yy = date.getFullYear();
 	var mm = date.getMonth() + 1;
 		mm = mm>9 ?mm: '0'+mm;
-	var siteRoot = "/opt/htdocs/cmsv3/cmsroot/sites/";
+
 	var deployPath = {
 		"site"      : "static/web" + yy +mm,
 		"m-site"    : "static/web" + yy +mm,
@@ -222,8 +316,16 @@ function deploy(htmlData,conf){
 
 	htmlData['pageName'] = htmlData.domain + '@' + curDirName;
 	htmlData['dmPrefixName'] = dmPrefixName;
-	htmlData['date'] = (new Date()).toDateString()
 
+
+	htmlData['date'] = (new Date()).toDateString();
+
+	// 替换模板默认字段
+	initSiteContent(htmlData, conf);
+}
+
+// 替换模板字段
+function initSiteContent(htmlData,conf){
 	var files = util.find('./','',new RegExp('(\\.md)$','g'));
 	fis.util.map(htmlData,function(k,v){
 		fis.util.map(files,function(index,filepath){
@@ -248,6 +350,9 @@ function deploy(htmlData,conf){
 	});
 }
 
+
+
+
 // 检查当前目录是否已有文件
 function check_dir(dir){
 	var dir = path.resolve(dir);
@@ -269,7 +374,7 @@ function getGit_url(id){
 	    repos = 'https://codeload.github.com/';
 	    postfix = '/tar.gz/';
 	}else{
-		repos = 'http://git.woniu.com:3600/';
+		repos = 'http://gitlab.woniu.com/';
 		postfix = '/repository/archive.tar.gz?ref=';
 	}
 	if(!id){
@@ -277,7 +382,7 @@ function getGit_url(id){
 	}
 	var c = id.split('@');
     if (!c[1]) {
-        c[1] = 'master';
+        c[1] = 'master'; 
     }
     return  repos + c[0] + postfix + c[1];
 }
